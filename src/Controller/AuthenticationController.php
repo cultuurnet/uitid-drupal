@@ -3,8 +3,10 @@
 namespace Drupal\uitid\Controller;
 
 use Auth0\SDK\Auth0;
+use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Routing\TrustedRedirectResponse;
+use Drupal\Core\Url;
 use Drupal\externalauth\ExternalAuthInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -104,9 +106,12 @@ class AuthenticationController extends ControllerBase {
         $this->externalAuth->loginRegister($userInfo['sub'], 'uitid', $accountData);
       }
 
-      $destination = $request->query->has('destination') ? $request->query->get('destination') : '<front>';
-      $response = $this->redirect($destination);
+      $destination = $request->query->has('destination') ? $request->query->get('destination') : Url::fromRoute('<front>')->toString();
+      if (UrlHelper::isExternal($destination)) {
+        $destination = '/';
+      }
 
+      $response = new RedirectResponse($destination);
       $response->setMaxAge(0);
       $response->setPrivate();
     }
