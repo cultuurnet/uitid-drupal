@@ -4,6 +4,7 @@ namespace Drupal\uitid\Auth0;
 
 use Auth0\SDK\Auth0;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Url;
 use Drupal\uitid\Form\UitIdSettingsForm;
 
 /**
@@ -24,7 +25,7 @@ class DrupalAuth0Client extends Auth0 {
       'domain' => $config->get('host') ?? '',
       'client_id' => $config->get('client_id') ?? '',
       'client_secret' => $config->get('secret') ?? '',
-      'redirect_uri' => 'https://cultuurkuur.dev.intracto.com/uitid/authorize'
+      'redirect_uri' => Url::fromRoute('uitid.authorize', [], ['absolute' => TRUE])->toString(),
     ]);
   }
 
