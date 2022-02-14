@@ -1,0 +1,29 @@
+uitid.connect:
+  path: '/uitid/login'
+  defaults:
+    _controller: '\Drupal\uitid\Controller\AuthenticationController::login'
+    _title: 'Login'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+
+uitid.authorize:
+  path: 'uitid/authorize'
+  defaults:
+    _controller: '\Drupal\uitid\Controller\AuthenticationController::authorize'
+    _title: 'Authorize'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+
+uitid.authenticated:
+  path: '/uitid/authenticated'
+  defaults:
+    _title: 'Log in'
+    _controller: '\Drupal\culturefeed_user\Controller\AuthenticationController::authenticated'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
