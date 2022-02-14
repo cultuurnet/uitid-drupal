@@ -1,0 +1,11 @@
+{
+    "name": "cultuurnet/uitid",
+    "type": "drupal-module",
+    "description": "Provides the option to login to your account using your UiTID profile",
+    "license": "Apache-2.0",
+    "require": {
+        "auth0/auth0-php": "^7.5"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
