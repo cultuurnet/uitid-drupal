@@ -2,3 +2,7 @@ services:
   uitid.auth0_client:
     class: Drupal\uitid\Auth0\DrupalAuth0Client
     arguments: ['@config.factory']
+
+  uitid.current_user:
+    class: Drupal\uitid\UitIdCurrentUser
+    arguments: [ '@uitid.auth0_client' ]
