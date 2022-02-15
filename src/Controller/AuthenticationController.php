@@ -3,9 +3,12 @@
 namespace Drupal\uitid\Controller;
 
 use Auth0\SDK\Auth0;
+use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Routing\TrustedRedirectResponse;
+use Drupal\Core\Url;
 use Drupal\externalauth\ExternalAuthInterface;
+use Drupal\uitid\UitIdCurrentUserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,18 +33,27 @@ class AuthenticationController extends ControllerBase {
   protected $externalAuth;
 
   /**
+   * The UiTiD current user.
+   *
+   * @var UitIdCurrentUserInterface
+   */
+  protected $uitIdCurrentUser;
+
+  /**
    * @param \Auth0\SDK\Auth0 $auth0Client
    *   The auth0 client.
    */
-  public function __construct(Auth0 $auth0Client, ExternalAuthInterface $externalAuth) {
+  public function __construct(Auth0 $auth0Client, ExternalAuthInterface $externalAuth, UitIdCurrentUserInterface $uitIdCurrentUser) {
     $this->auth0Client = $auth0Client;
     $this->externalAuth = $externalAuth;
+    $this->uitIdCurrentUser = $uitIdCurrentUser;
   }
 
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('uitid.auth0_client'),
-      $container->get('externalauth.externalauth')
+      $container->get('externalauth.externalauth'),
+      $container->get('uitid.current_user')
     );
   }
 
@@ -55,7 +67,15 @@ class AuthenticationController extends ControllerBase {
    *   The redirect response to uitid.
    */
   public function login(Request $request) {
-    $redirect = new TrustedRedirectResponse($this->auth0Client->getLoginUrl(), 302);
+    $redirect = new TrustedRedirectResponse($this->auth0Client->getLoginUrl([
+      Auth0::TRANSIENT_STATE_KEY => base64_encode(
+        \json_encode($this->getDestinationArray()),
+      ),
+    ]), 302);
+
+    // Remove the destination query parameter, so Drupal does not interfere with our redirect response.
+    $request->query->remove('destination');
+
     $metadata = $redirect->getCacheableMetadata();
     $metadata->setCacheMaxAge(0);
 
@@ -89,7 +109,6 @@ class AuthenticationController extends ControllerBase {
 
     try {
       $userInfo = $this->auth0Client->getUser();
-
       $account = NULL;
 
       // First try if user exist via the v1 module.
@@ -104,9 +123,13 @@ class AuthenticationController extends ControllerBase {
         $this->externalAuth->loginRegister($userInfo['sub'], 'uitid', $accountData);
       }
 
-      $destination = $request->query->has('destination') ? $request->query->get('destination') : '<front>';
-      $response = $this->redirect($destination);
+      $state = $this->decodeState($request);
+      $destination = $state['destination'] ?? Url::fromRoute('<front>')->toString();
+      if (UrlHelper::isExternal($destination)) {
+        $destination = '/';
+      }
 
+      $response = new RedirectResponse($destination);
       $response->setMaxAge(0);
       $response->setPrivate();
     }
@@ -124,8 +147,19 @@ class AuthenticationController extends ControllerBase {
    *   Return Authorize string.
    */
   public function authenticated(Request $request) {
+    if ($this->currentUser()->isAuthenticated() && $this->uitIdCurrentUser->isUitIdUser()) {
+      if ($request->query->has('_exception_statuscode') && $request->query->get('_exception_statuscode') === 403) {
+        return [
+          '#markup' => $this->t('You are not authorized to access this page.'),
+          '#title' => $this->t('Access denied'),
+        ];
+      }
+
+      return new RedirectResponse(Url::fromRoute('<front>')->toString(), 302);
+    }
+
     return [
-      '#theme' => 'culturefeed_user_authenticated_page',
+      '#theme' => 'uitid_authenticated_page',
     ];
   }
 
@@ -147,6 +181,24 @@ class AuthenticationController extends ControllerBase {
     $response->setPrivate();
 
     return $response;
+  }
+
+  /**
+   * Decodes the state parameter from a request.
+   *
+   * @param Request $request
+   *   The request.
+   * @return array
+   *   The state values.
+   */
+  private function decodeState(Request $request) {
+    $state = $request->query->get('state');
+    if (empty($state)) {
+      return [];
+    }
+
+    $values = base64_decode($state);
+    return \json_decode($values, TRUE);
   }
 
 }

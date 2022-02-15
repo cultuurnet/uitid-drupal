@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Contains uitid.module.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function uitid_user_theme() {
+  $theme = [];
+
+  $theme['uitid_authenticated_page'] = [
+    'variables' => [],
+    'template' => 'uitid-authenticated-page',
+    'file' => 'includes/theme.inc',
+  ];
+
+  return $theme;
+}
