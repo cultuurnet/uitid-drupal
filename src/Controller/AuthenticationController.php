@@ -57,7 +57,15 @@ class AuthenticationController extends ControllerBase {
    *   The redirect response to uitid.
    */
   public function login(Request $request) {
-    $redirect = new TrustedRedirectResponse($this->auth0Client->getLoginUrl(), 302);
+    $redirect = new TrustedRedirectResponse($this->auth0Client->getLoginUrl([
+      Auth0::TRANSIENT_STATE_KEY => base64_encode(
+        \json_encode($this->getDestinationArray()),
+      ),
+    ]), 302);
+
+    // Remove the destination query parameter, so Drupal does not interfere with our redirect response.
+    $request->query->remove('destination');
+
     $metadata = $redirect->getCacheableMetadata();
     $metadata->setCacheMaxAge(0);
 
@@ -106,7 +114,8 @@ class AuthenticationController extends ControllerBase {
         $this->externalAuth->loginRegister($userInfo['sub'], 'uitid', $accountData);
       }
 
-      $destination = $request->query->has('destination') ? $request->query->get('destination') : Url::fromRoute('<front>')->toString();
+      $state = $this->decodeState($request);
+      $destination = $state['destination'] ?? Url::fromRoute('<front>')->toString();
       if (UrlHelper::isExternal($destination)) {
         $destination = '/';
       }
@@ -152,6 +161,24 @@ class AuthenticationController extends ControllerBase {
     $response->setPrivate();
 
     return $response;
+  }
+
+  /**
+   * Decodes the state parameter from a request.
+   *
+   * @param Request $request
+   *   The request.
+   * @return array
+   *   The state values.
+   */
+  private function decodeState(Request $request) {
+    $state = $request->query->get('state');
+    if (empty($state)) {
+      return [];
+    }
+
+    $values = base64_decode($state);
+    return \json_decode($values, TRUE);
   }
 
 }
