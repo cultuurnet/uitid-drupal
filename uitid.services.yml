@@ -6,3 +6,9 @@ services:
   uitid.current_user:
     class: Drupal\uitid\UitIdCurrentUser
     arguments: [ '@uitid.auth0_client' ]
+
+  access_check.is_uitid_user.is_connected:
+    class: Drupal\uitid\Access\UitIdUserStatusCheck
+    arguments: ['@uitid.current_user']
+    tags:
+      - { name: access_check, applies_to: _is_uitid_user }
