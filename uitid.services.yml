@@ -1,5 +1,4 @@
 services:
-
   uitid.auth0_client:
     class: Drupal\uitid\Auth0\DrupalAuth0Client
     arguments: ['@config.factory']

@@ -27,3 +27,13 @@ uitid.authenticated:
     _access: 'TRUE'
   options:
     no_cache: TRUE
+
+culturefeed_api.settings:
+  path: '/admin/config/uitid'
+  defaults:
+    _form: '\Drupal\uitid\Form\UitIdSettingsForm'
+    _title: 'UiTID settings'
+  requirements:
+    _permission: 'administer uitid configuration'
+  options:
+    _admin_route: TRUE

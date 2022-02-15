@@ -1,0 +1,5 @@
+uitid.settings:
+  title: 'UiTID settings'
+  description: 'Configure UiTID settings'
+  route_name: culturefeed_api.settings
+  parent: system.admin_config
