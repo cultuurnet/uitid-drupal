@@ -64,6 +64,7 @@ class UitIdSettingsForm extends ConfigFormBase {
     $config->set('host', trim($form_state->getValue('host'), '/'));
     $config->set('client_id', $form_state->getValue('client_id'));
     $config->set('secret', $form_state->getValue('secret'));
+
     $config->save();
 
     parent::submitForm($form, $form_state);
