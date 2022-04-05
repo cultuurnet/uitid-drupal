@@ -57,7 +57,7 @@ class DrupalAuth0Client extends Auth0 {
       return $host;
     }
 
-    return trim($host, '/') . '/';
+    return trim($host, '/');
   }
 
   /**
