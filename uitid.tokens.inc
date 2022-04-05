@@ -33,26 +33,6 @@ function uitid_token_info() {
     'description' => t('The email address of the active UiTID user.'),
   ];
 
-  $info['tokens']['uitiduser']['street'] = [
-    'name' => t('UiTID user street'),
-    'description' => t('The street (and number) of the active UiTID user.'),
-  ];
-
-  $info['tokens']['uitiduser']['zipcode'] = [
-    'name' => t('UiTID user zipcode'),
-    'description' => t('The zipcode of the active UiTID user.'),
-  ];
-
-  $info['tokens']['uitiduser']['city'] = [
-    'name' => t('UiTID user city'),
-    'description' => t('The city of the active UiTID user.'),
-  ];
-
-  $info['tokens']['uitiduser']['country'] = [
-    'name' => t('UiTID user country'),
-    'description' => t('The country of the active UiTID user.'),
-  ];
-
   return $info;
 }
 
@@ -82,23 +62,6 @@ function uitid_tokens($type, $tokens, array $data, array $options, BubbleableMet
 
             case 'email':
               $replacements[$original] = $userInfo['email'] ?? '';
-              break;
-
-            // @todo: Add missing token values
-            case 'street':
-              $replacements[$original] = $userInfo[''];
-              break;
-
-            case 'zipcode':
-              $replacements[$original] = $userInfo[''];
-              break;
-
-            case 'city':
-              $replacements[$original] = $userInfo[''];
-              break;
-
-            case 'country':
-              $replacements[$original] = $userInfo[''];
               break;
           }
         }
