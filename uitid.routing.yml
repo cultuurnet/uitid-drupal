@@ -28,7 +28,7 @@ uitid.authenticated:
   options:
     no_cache: TRUE
 
-culturefeed_api.settings:
+uitid.settings:
   path: '/admin/config/uitid'
   defaults:
     _form: '\Drupal\uitid\Form\UitIdSettingsForm'
