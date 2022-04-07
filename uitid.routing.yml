@@ -22,7 +22,7 @@ uitid.authenticated:
   path: '/uitid/authenticated'
   defaults:
     _title: 'Log in'
-    _controller: '\Drupal\culturefeed_user\Controller\AuthenticationController::authenticated'
+    _controller: '\Drupal\uitid\Controller\AuthenticationController::authenticated'
   requirements:
     _access: 'TRUE'
   options:
