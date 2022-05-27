@@ -8,6 +8,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Url;
 use Drupal\externalauth\ExternalAuthInterface;
+use Drupal\uitid\Form\UitIdSettingsForm;
 use Drupal\uitid\UitIdCurrentUserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -67,11 +68,18 @@ class AuthenticationController extends ControllerBase {
    *   The redirect response to uitid.
    */
   public function login(Request $request) {
-    $redirect = new TrustedRedirectResponse($this->auth0Client->getLoginUrl([
+    $params = [
       Auth0::TRANSIENT_STATE_KEY => base64_encode(
         \json_encode($this->getDestinationArray()),
       ),
-    ]), 302);
+      'prompt' => 'login'
+    ];
+
+    if ($referrer = $this->config(UitIdSettingsForm::CONFIG_NAME)->get('referrer')) {
+      $params['referrer'] = $referrer;
+    }
+
+    $redirect = new TrustedRedirectResponse($this->auth0Client->getLoginUrl($params), 302);
 
     // Remove the destination query parameter, so Drupal does not interfere with our redirect response.
     $request->query->remove('destination');
@@ -99,7 +107,13 @@ class AuthenticationController extends ControllerBase {
         'consent_required',
       ];
       if (in_array($errorCode, $redirectErrors)) {
-        return new TrustedRedirectResponse($this->auth0Client->getLoginUrl());
+        $params = [
+          'prompt' => 'login'
+        ];
+        if ($referrer = $this->config(UitIdSettingsForm::CONFIG_NAME)->get('referrer')) {
+          $params['referrer'] = $referrer;
+        }
+        return new TrustedRedirectResponse($this->auth0Client->getLoginUrl($params));
       }
       else {
         $errorDescription = $request->query->get('error_description', $request->request->get('error_description', $errorCode));

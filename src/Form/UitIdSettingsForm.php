@@ -53,6 +53,12 @@ class UitIdSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('secret') ?: '',
     ];
 
+    $form['referrer'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Referrer'),
+      '#default_value' => $config->get('referrer') ?: '',
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -64,6 +70,7 @@ class UitIdSettingsForm extends ConfigFormBase {
     $config->set('host', trim($form_state->getValue('host'), '/'));
     $config->set('client_id', $form_state->getValue('client_id'));
     $config->set('secret', $form_state->getValue('secret'));
+    $config->set('referrer', $form_state->getValue('referrer'));
 
     $config->save();
 
