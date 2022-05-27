@@ -132,7 +132,8 @@ class AuthenticationController extends ControllerBase {
 
       if (empty($account)) {
         $accountData = [
-          'name' => $userInfo['nickname'],
+          'name' => $userInfo['email'],
+          'mail' => $userInfo['email'],
         ];
         $this->externalAuth->loginRegister($userInfo['sub'], 'uitid', $accountData);
       }
@@ -148,7 +149,9 @@ class AuthenticationController extends ControllerBase {
       $response->setPrivate();
     }
     catch (\Exception $e) {
-      return $this->handleFailure('There was an error while creating / loading the drupal user');
+      return $this->handleFailure('There was an error while creating / loading the drupal user: !message', [
+        '!message' => $e->getMessage(),
+      ]);
     }
 
     return $response;
@@ -182,12 +185,14 @@ class AuthenticationController extends ControllerBase {
    *
    * @param string $logMessage
    *   Log message to show.
+   * @param array $context
+   *   Context for the log.
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    *   The redirect.
    */
-  private function handleFailure(string $logMessage) {
+  private function handleFailure(string $logMessage, array $context = []) {
     $this->messenger()->addError($this->t('There was a problem logging you in, sorry for the inconvenience.'));
-    $this->getLogger('uitid')->error($logMessage);
+    $this->getLogger('uitid')->error($logMessage, $context);
     $this->auth0Client->logout();
 
     $response = $this->redirect('<front>');
