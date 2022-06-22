@@ -127,7 +127,7 @@ class AuthenticationController extends ControllerBase {
 
       // First try if user exist via the v1 module.
       if (isset($userInfo['https://publiq.be/uitidv1id'])) {
-        $account = $this->externalAuth->login('culturefeed_uitid', $userInfo['https://publiq.be/uitidv1id']);
+        $account = $this->externalAuth->login($userInfo['https://publiq.be/uitidv1id'], 'culturefeed_uitid');
       }
 
       if (empty($account)) {
