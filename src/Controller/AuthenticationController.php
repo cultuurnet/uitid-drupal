@@ -7,9 +7,11 @@ use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Url;
+use Drupal\externalauth\AuthmapInterface;
 use Drupal\externalauth\ExternalAuthInterface;
 use Drupal\uitid\Form\UitIdSettingsForm;
 use Drupal\uitid\UitIdCurrentUserInterface;
+use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,20 +43,34 @@ class AuthenticationController extends ControllerBase {
   protected $uitIdCurrentUser;
 
   /**
+   * The authmap.
+   *
+   * @var AuthmapInterface
+   */
+  protected $authmap;
+
+  /**
    * @param \Auth0\SDK\Auth0 $auth0Client
    *   The auth0 client.
    */
-  public function __construct(Auth0 $auth0Client, ExternalAuthInterface $externalAuth, UitIdCurrentUserInterface $uitIdCurrentUser) {
+  public function __construct(
+    Auth0 $auth0Client,
+    ExternalAuthInterface $externalAuth,
+    UitIdCurrentUserInterface $uitIdCurrentUser,
+    AuthmapInterface $authmap
+  ) {
     $this->auth0Client = $auth0Client;
     $this->externalAuth = $externalAuth;
     $this->uitIdCurrentUser = $uitIdCurrentUser;
+    $this->authmap = $authmap;
   }
 
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('uitid.auth0_client'),
       $container->get('externalauth.externalauth'),
-      $container->get('uitid.current_user')
+      $container->get('uitid.current_user'),
+      $container->get('externalauth.authmap')
     );
   }
 
@@ -123,19 +139,26 @@ class AuthenticationController extends ControllerBase {
 
     try {
       $userInfo = $this->auth0Client->getUser();
-      $account = NULL;
+      $account = $this->externalAuth->login($userInfo['sub'], 'uitid');
 
-      // First try if user exist via the v1 module.
-      if (isset($userInfo['https://publiq.be/uitidv1id'])) {
+      // Try with uitid v1.
+      if (empty($account) && isset($userInfo['https://publiq.be/uitidv1id'])) {
         $account = $this->externalAuth->login($userInfo['https://publiq.be/uitidv1id'], 'culturefeed_uitid');
+
+        // Replace v1 mapping with v2 mapping.
+        if ($account) {
+          $this->externalAuth->linkExistingAccount($userInfo['sub'], 'uitid', $account);
+          $this->authmap->delete($account->id(), 'culturefeed_uitid');
+        }
       }
 
-      if (empty($account)) {
+      if (!$account) {
         $accountData = [
           'name' => $userInfo['email'],
           'mail' => $userInfo['email'],
         ];
-        $this->externalAuth->loginRegister($userInfo['sub'], 'uitid', $accountData);
+        $account = $this->externalAuth->register($userInfo['sub'], 'uitid', $accountData);
+        $this->externalAuth->userLoginFinalize($account, $userInfo['sub'], 'uitid');
       }
 
       $state = $this->decodeState($request);
