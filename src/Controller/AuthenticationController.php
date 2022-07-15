@@ -139,23 +139,26 @@ class AuthenticationController extends ControllerBase {
 
     try {
       $userInfo = $this->auth0Client->getUser();
-      $account = NULL;
+      $account = $this->externalAuth->login($userInfo['sub'], 'uitid');
 
-      if (isset($userInfo['https://publiq.be/uitidv1id'])) {
+      // Try with uitid v1.
+      if (empty($account) && isset($userInfo['https://publiq.be/uitidv1id'])) {
         $account = $this->externalAuth->login($userInfo['https://publiq.be/uitidv1id'], 'culturefeed_uitid');
 
-        if ($account instanceof UserInterface) {
+        // Replace v1 mapping with v2 mapping.
+        if ($account) {
           $this->externalAuth->linkExistingAccount($userInfo['sub'], 'uitid', $account);
-          $this->authmap->delete($userInfo['https://publiq.be/uitidv1id'], 'culturefeed_uitid');
+          $this->authmap->delete($account->id(), 'culturefeed_uitid');
         }
       }
 
-      if (empty($account)) {
+      if (!$account) {
         $accountData = [
           'name' => $userInfo['email'],
           'mail' => $userInfo['email'],
         ];
-        $this->externalAuth->loginRegister($userInfo['sub'], 'uitid', $accountData);
+        $account = $this->externalAuth->register($userInfo['sub'], 'uitid', $accountData);
+        $this->externalAuth->userLoginFinalize($account, $userInfo['sub'], 'uitid');
       }
 
       $state = $this->decodeState($request);
