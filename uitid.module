@@ -8,7 +8,7 @@
 /**
  * Implements hook_theme().
  */
-function uitid_user_theme() {
+function uitid_theme() {
   $theme = [];
 
   $theme['uitid_authenticated_page'] = [

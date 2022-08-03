@@ -85,20 +85,22 @@ class AuthenticationController extends ControllerBase {
    */
   public function login(Request $request) {
     $params = [
-      Auth0::TRANSIENT_STATE_KEY => base64_encode(
-        \json_encode($this->getDestinationArray()),
-      ),
       'prompt' => 'login'
     ];
+
+    if ($request->query->has('destination')) {
+      $params[Auth0::TRANSIENT_STATE_KEY] = base64_encode(
+        \json_encode($this->getDestinationArray()),
+      );
+      // Remove the destination query parameter, so Drupal does not interfere with our redirect response.
+      $request->query->remove('destination');
+    }
 
     if ($referrer = $this->config(UitIdSettingsForm::CONFIG_NAME)->get('referrer')) {
       $params['referrer'] = $referrer;
     }
 
     $redirect = new TrustedRedirectResponse($this->auth0Client->getLoginUrl($params), 302);
-
-    // Remove the destination query parameter, so Drupal does not interfere with our redirect response.
-    $request->query->remove('destination');
 
     $metadata = $redirect->getCacheableMetadata();
     $metadata->setCacheMaxAge(0);
