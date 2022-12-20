@@ -18,6 +18,11 @@ function uitid_token_info() {
     'description' => t('Custom tokens with values from the active UiTID user.'),
   ];
 
+  $info['tokens']['uitiduser']['id'] = [
+    'name' => t("UiTID user's id"),
+    'description' => t('The ID of the active UiTID user.'),
+  ];
+
   $info['tokens']['uitiduser']['first_name'] = [
     'name' => t("UiTID user's first name"),
     'description' => t('The first name of the active UiTID user.'),
@@ -49,6 +54,10 @@ function uitid_tokens($type, $tokens, array $data, array $options, BubbleableMet
           switch ($name) {
             case 'first_name':
               $replacements[$original] = $userInfo['https://publiq.be/first_name'] ?? '';
+              break;
+
+            case 'id':
+              $replacements[$original] = $userInfo['sub'] ?? '';
               break;
 
             case 'email':
