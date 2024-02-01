@@ -1,6 +1,6 @@
 name: 'UiTID'
 type: module
 description: 'Provides the option to login to your account using your UiTID profile.'
-core_version_requirement: ^8 || ^9
+core_version_requirement: ^8 || ^9 || ^10
 dependencies:
   - externalauth:externalauth
