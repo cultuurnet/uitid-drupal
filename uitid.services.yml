@@ -1,7 +1,8 @@
 services:
   uitid.auth0_client:
-    class: Drupal\uitid\Auth0\DrupalAuth0Client
-    arguments: ['@config.factory', '@messenger' ]
+    class: Auth0\SDK\Auth0
+    factory: Drupal\uitid\Auth0\DrupalAuth0ClientFactory::getClient
+    arguments: ['@config.factory']
 
   uitid.current_user:
     class: Drupal\uitid\UitIdCurrentUser

@@ -16,14 +16,14 @@ class UitIdUserStatusCheck implements AccessInterface {
   /**
    * The UiTiD current user.
    *
-   * @var UitIdCurrentUserInterface
+   * @var \Drupal\uitid\UitIdCurrentUserInterface
    */
   protected $uitIdCurrentUser;
 
   /**
    * UitidUserStatusCheck constructor.
    *
-   * @param UitIdCurrentUserInterface $uitIdCurrentUser
+   * @param \Drupal\uitid\UitIdCurrentUserInterface $uitIdCurrentUser
    *   The UiTiD current user.
    */
   public function __construct(UitIdCurrentUserInterface $uitIdCurrentUser) {

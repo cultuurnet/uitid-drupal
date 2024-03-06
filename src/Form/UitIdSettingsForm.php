@@ -53,6 +53,13 @@ class UitIdSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('secret') ?: '',
     ];
 
+    $form['cookie_secret'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Cookie Secret (Generate using shell: openssl rand -hex 32)'),
+      '#required' => TRUE,
+      '#default_value' => $config->get('cookie_secret') ?: '',
+    ];
+
     $form['referrer'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Referrer'),

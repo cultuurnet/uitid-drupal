@@ -4,8 +4,14 @@
     "description": "Provides the option to login to your account using your UiTID profile",
     "license": "Apache-2.0",
     "require": {
-        "auth0/auth0-php": "^7.5"
+        "auth0/auth0-php": "^8.0",
+        "nyholm/psr7": "^1.8"
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
 }

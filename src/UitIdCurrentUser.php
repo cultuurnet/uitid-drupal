@@ -9,10 +9,13 @@ use Auth0\SDK\Auth0;
  */
 class UitIdCurrentUser implements UitIdCurrentUserInterface {
 
-  protected $auth0Client;
-
-  public function __construct(Auth0 $auth0Client) {
-    $this->auth0Client = $auth0Client;
+  /**
+   * Constructs UitIdCurrentUser.
+   *
+   * @param \Auth0\SDK\Auth0 $auth0Client
+   *   The auth0 client.
+   */
+  public function __construct(protected Auth0 $auth0Client) {
   }
 
   /**
@@ -27,7 +30,7 @@ class UitIdCurrentUser implements UitIdCurrentUserInterface {
    */
   public function getUserId(): ?string {
     $userInfo = $this->auth0Client->getUser();
-    return \is_array($userInfo) ? $userInfo['sub'] ?? null : $userInfo;
+    return \is_array($userInfo) ? $userInfo['sub'] ?? NULL : $userInfo;
   }
 
   /**
@@ -42,7 +45,7 @@ class UitIdCurrentUser implements UitIdCurrentUserInterface {
    */
   public function getName(): ?string {
     $user = $this->getUser();
-    return $user['nickname'] ?? null;
+    return $user['nickname'] ?? NULL;
   }
 
 }

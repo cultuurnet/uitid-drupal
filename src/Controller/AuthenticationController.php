@@ -11,7 +11,6 @@ use Drupal\externalauth\AuthmapInterface;
 use Drupal\externalauth\ExternalAuthInterface;
 use Drupal\uitid\Form\UitIdSettingsForm;
 use Drupal\uitid\UitIdCurrentUserInterface;
-use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,49 +21,28 @@ use Symfony\Component\HttpFoundation\Request;
 class AuthenticationController extends ControllerBase {
 
   /**
-   * The auth0 client.
+   * Constructs AuthenticationController.
    *
-   * @var \Auth0\SDK\Auth0
-   */
-  protected $auth0Client;
-
-  /**
-   * The drupal external auth service.
-   *
-   * @var \Drupal\externalauth\ExternalAuthInterface
-   */
-  protected $externalAuth;
-
-  /**
-   * The UiTiD current user.
-   *
-   * @var UitIdCurrentUserInterface
-   */
-  protected $uitIdCurrentUser;
-
-  /**
-   * The authmap.
-   *
-   * @var AuthmapInterface
-   */
-  protected $authmap;
-
-  /**
    * @param \Auth0\SDK\Auth0 $auth0Client
    *   The auth0 client.
+   * @param \Drupal\externalauth\ExternalAuthInterface $externalAuth
+   *   The external auth service.
+   * @param \Drupal\uitid\UitIdCurrentUserInterface $uitIdCurrentUser
+   *   The UiTiD current user.
+   * @param \Drupal\externalauth\AuthmapInterface $authmap
+   *   The authmap.
    */
   public function __construct(
-    Auth0 $auth0Client,
-    ExternalAuthInterface $externalAuth,
-    UitIdCurrentUserInterface $uitIdCurrentUser,
-    AuthmapInterface $authmap
+    protected Auth0 $auth0Client,
+    protected ExternalAuthInterface $externalAuth,
+    protected UitIdCurrentUserInterface $uitIdCurrentUser,
+    protected AuthmapInterface $authmap
   ) {
-    $this->auth0Client = $auth0Client;
-    $this->externalAuth = $externalAuth;
-    $this->uitIdCurrentUser = $uitIdCurrentUser;
-    $this->authmap = $authmap;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('uitid.auth0_client'),
@@ -80,19 +58,20 @@ class AuthenticationController extends ControllerBase {
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The current request.
    *
-   * @return TrustedRedirectResponse
+   * @return \Drupal\Core\Routing\TrustedRedirectResponse
    *   The redirect response to uitid.
    */
   public function login(Request $request) {
     $params = [
-      'prompt' => 'login'
+      'prompt' => 'login',
     ];
 
     if ($request->query->has('destination')) {
-      $params[Auth0::TRANSIENT_STATE_KEY] = base64_encode(
+      $params['state'] = base64_encode(
         \json_encode($this->getDestinationArray()),
       );
-      // Remove the destination query parameter, so Drupal does not interfere with our redirect response.
+      // Remove the destination query parameter
+      // so Drupal does not interfere with our redirect response.
       $request->query->remove('destination');
     }
 
@@ -100,7 +79,7 @@ class AuthenticationController extends ControllerBase {
       $params['referrer'] = $referrer;
     }
 
-    $redirect = new TrustedRedirectResponse($this->auth0Client->getLoginUrl($params), 302);
+    $redirect = new TrustedRedirectResponse($this->auth0Client->login(params: $params), 302);
 
     $metadata = $redirect->getCacheableMetadata();
     $metadata->setCacheMaxAge(0);
@@ -112,13 +91,14 @@ class AuthenticationController extends ControllerBase {
    * Authorize the uitid user.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The current request.
    */
-  public function authorize(Request  $request) {
+  public function authorize(Request $request) {
     // Check for in error indication in the query params.
     $errorCode = $request->query->get('error', $request->request->get('error'));
 
     if ($errorCode) {
-      // Errors codes that should be redirected back to Auth0 for authentication.
+      // Errors codes that should be redirected back to Auth0.
       $redirectErrors = [
         'login_required',
         'interaction_required',
@@ -126,12 +106,12 @@ class AuthenticationController extends ControllerBase {
       ];
       if (in_array($errorCode, $redirectErrors)) {
         $params = [
-          'prompt' => 'login'
+          'prompt' => 'login',
         ];
         if ($referrer = $this->config(UitIdSettingsForm::CONFIG_NAME)->get('referrer')) {
           $params['referrer'] = $referrer;
         }
-        return new TrustedRedirectResponse($this->auth0Client->getLoginUrl($params));
+        return new TrustedRedirectResponse($this->auth0Client->login(params: $params));
       }
       else {
         $errorDescription = $request->query->get('error_description', $request->request->get('error_description', $errorCode));
@@ -140,6 +120,7 @@ class AuthenticationController extends ControllerBase {
     }
 
     try {
+      $this->auth0Client->exchange();
       $userInfo = $this->auth0Client->getUser();
       $account = $this->externalAuth->login($userInfo['sub'], 'uitid');
 
@@ -212,6 +193,7 @@ class AuthenticationController extends ControllerBase {
    *   Log message to show.
    * @param array $context
    *   Context for the log.
+   *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    *   The redirect.
    */
@@ -230,8 +212,9 @@ class AuthenticationController extends ControllerBase {
   /**
    * Decodes the state parameter from a request.
    *
-   * @param Request $request
+   * @param \Symfony\Component\HttpFoundation\Request $request
    *   The request.
+   *
    * @return array
    *   The state values.
    */

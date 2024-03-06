@@ -24,7 +24,7 @@ interface UitIdCurrentUserInterface {
   public function getUserId(): ?string;
 
   /**
-   * Get the user
+   * Get the user.
    *
    * @return array|null
    *   The user information or null

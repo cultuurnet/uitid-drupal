@@ -32,7 +32,7 @@ class UitIdUserStatus extends AccessPluginBase implements CacheableDependencyInt
   /**
    * The UiTiD current user.
    *
-   * @var UitIdCurrentUserInterface
+   * @var \Drupal\uitid\UitIdCurrentUserInterface
    */
   protected $uitIdCurrentUser;
 
@@ -45,8 +45,8 @@ class UitIdUserStatus extends AccessPluginBase implements CacheableDependencyInt
    *   The plugin_id for the plugin instance.
    * @param mixed $plugin_definition
    *   The plugin implementation definition.
-   * @param UitIdCurrentUserInterface $uitIdCurrentUser
-   *   The UiTiD current user
+   * @param \Drupal\uitid\UitIdCurrentUserInterface $uitIdCurrentUser
+   *   The UiTiD current user.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, UitIdCurrentUserInterface $uitIdCurrentUser) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
