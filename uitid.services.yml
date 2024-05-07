@@ -2,7 +2,7 @@ services:
   uitid.auth0_client:
     class: Auth0\SDK\Auth0
     factory: Drupal\uitid\Auth0\DrupalAuth0ClientFactory::getClient
-    arguments: ['@config.factory']
+    arguments: ['@config.factory', '@uitid.drupal_session_store']
 
   uitid.current_user:
     class: Drupal\uitid\UitIdCurrentUser
@@ -13,3 +13,7 @@ services:
     arguments: ['@uitid.current_user']
     tags:
       - { name: access_check, applies_to: _is_uitid_user }
+
+  uitid.drupal_session_store:
+    class: Drupal\uitid\SessionStore\DrupalSessionStore
+    arguments: ['@session']
