@@ -24,15 +24,18 @@ class AuthenticationController extends ControllerBase {
   /**
    * Constructs AuthenticationController.
    *
+   * @param \Auth0\SDK\Auth0 $auth0Client
    * @param Auth0 $auth0Client
    *   The auth0 client.
+   * @param \Drupal\externalauth\ExternalAuthInterface $externalAuth
    * @param ExternalAuthInterface $externalAuth
    *   The external auth service.
+   * @param \Drupal\uitid\UitIdCurrentUserInterface $uitIdCurrentUser
    * @param UitIdCurrentUserInterface $uitIdCurrentUser
    *   The UiTiD current user.
-   * @param AuthmapInterface $authmap
-   *   The authmap.
-   * @param SessionManagerInterface $sessionManager
+   * @param \Drupal\externalauth\AuthmapInterface $authmap
+   *   The authmap
+   * @param \Drupal\Core\Session\SessionManagerInterface $sessionManager
    *   The session manager.
    */
   public function __construct(
