@@ -6,6 +6,7 @@ use Auth0\SDK\Auth0;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Routing\TrustedRedirectResponse;
+use Drupal\Core\Session\SessionManagerInterface;
 use Drupal\Core\Url;
 use Drupal\externalauth\AuthmapInterface;
 use Drupal\externalauth\ExternalAuthInterface;
@@ -24,19 +25,25 @@ class AuthenticationController extends ControllerBase {
    * Constructs AuthenticationController.
    *
    * @param \Auth0\SDK\Auth0 $auth0Client
+   * @param Auth0 $auth0Client
    *   The auth0 client.
    * @param \Drupal\externalauth\ExternalAuthInterface $externalAuth
+   * @param ExternalAuthInterface $externalAuth
    *   The external auth service.
    * @param \Drupal\uitid\UitIdCurrentUserInterface $uitIdCurrentUser
+   * @param UitIdCurrentUserInterface $uitIdCurrentUser
    *   The UiTiD current user.
    * @param \Drupal\externalauth\AuthmapInterface $authmap
-   *   The authmap.
+   *   The authmap
+   * @param \Drupal\Core\Session\SessionManagerInterface $sessionManager
+   *   The session manager.
    */
   public function __construct(
     protected Auth0 $auth0Client,
     protected ExternalAuthInterface $externalAuth,
     protected UitIdCurrentUserInterface $uitIdCurrentUser,
-    protected AuthmapInterface $authmap
+    protected AuthmapInterface $authmap,
+    protected SessionManagerInterface $sessionManager,
   ) {
   }
 
@@ -48,7 +55,8 @@ class AuthenticationController extends ControllerBase {
       $container->get('uitid.auth0_client'),
       $container->get('externalauth.externalauth'),
       $container->get('uitid.current_user'),
-      $container->get('externalauth.authmap')
+      $container->get('externalauth.authmap'),
+      $container->get('session_manager')
     );
   }
 
@@ -115,7 +123,7 @@ class AuthenticationController extends ControllerBase {
       }
       else {
         $errorDescription = $request->query->get('error_description', $request->request->get('error_description', $errorCode));
-        return $this->handleFailure($errorDescription);
+        return $this->handleFailure($errorDescription, [], $request);
       }
     }
 
@@ -157,33 +165,10 @@ class AuthenticationController extends ControllerBase {
     catch (\Exception $e) {
       return $this->handleFailure('There was an error while creating / loading the drupal user: !message', [
         '!message' => $e->getMessage(),
-      ]);
+      ], $request);
     }
 
     return $response;
-  }
-
-  /**
-   * Authenticated check.
-   *
-   * @return mixed
-   *   Return Authorize string.
-   */
-  public function authenticated(Request $request) {
-    if ($this->currentUser()->isAuthenticated() && $this->uitIdCurrentUser->isUitIdUser()) {
-      if ($request->query->has('_exception_statuscode') && $request->query->get('_exception_statuscode') === 403) {
-        return [
-          '#markup' => $this->t('You are not authorized to access this page.'),
-          '#title' => $this->t('Access denied'),
-        ];
-      }
-
-      return new RedirectResponse(Url::fromRoute('<front>')->toString(), 302);
-    }
-
-    return [
-      '#theme' => 'uitid_authenticated_page',
-    ];
   }
 
   /**
@@ -197,11 +182,25 @@ class AuthenticationController extends ControllerBase {
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    *   The redirect.
    */
-  private function handleFailure(string $logMessage, array $context = []) {
+  private function handleFailure(string $logMessage, array $context = [], Request $request = NULL) {
     $this->messenger()->addError($this->t('There was a problem logging you in, sorry for the inconvenience.'));
     $this->getLogger('uitid')->error($logMessage, $context);
-    $this->auth0Client->logout();
 
+    if ($this->currentUser()->isAuthenticated()) {
+      // Clear the current session, leaving the flash bag alone.
+      $this->sessionManager->getBag('attributes')?->clear();
+
+      // Trigger user_logout hooks.
+      $this->moduleHandler()->invokeAll('user_logout', [$this->currentUser()]);
+
+      // If a session is already active, destroy it.
+      if (\session_status() === PHP_SESSION_ACTIVE) {
+        // Destroy the current session, and reset $user to the anonymous user.
+        $this->sessionManager->destroy();
+      }
+    }
+
+    $request->query->remove('destination');
     $response = $this->redirect('<front>');
     $response->setMaxAge(0);
     $response->setPrivate();
