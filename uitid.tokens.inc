@@ -43,36 +43,37 @@ function uitid_tokens($type, $tokens, array $data, array $options, BubbleableMet
   $replacements = [];
 
   if ($type === 'uitiduser') {
-    /** @var \Drupal\uitid\UitIdCurrentUserInterface $currentUser */
-    $currentUser = \Drupal::service('uitid.current_user');
-
-    try {
-      if ($currentUser->isUitIdUser()) {
-        $userInfo = $currentUser->getUser();
-
-        foreach ($tokens as $name => $original) {
-          switch ($name) {
-            case 'first_name':
-              $replacements[$original] = $userInfo['https://publiq.be/first_name'] ?? '';
-              break;
-
-            case 'id':
-              $replacements[$original] = $userInfo['sub'] ?? '';
-              break;
-
-            case 'email':
-              $replacements[$original] = $userInfo['email'] ?? '';
-              break;
-          }
+    if (!isset($data['uitid_user'])) {
+      try {
+        /** @var \Drupal\uitid\UitIdCurrentUserInterface $currentUser */
+        $currentUser = \Drupal::service('uitid.current_user');
+        if ($currentUser->isUitIdUser()) {
+          $data['uitid_user'] = $currentUser->getUser();
         }
       }
-      else {
-        foreach ($tokens as $original) {
-          $replacements[$original] = '';
+      catch (\Exception $e) {
+        // No error.
+      }
+    }
+
+    if (isset($data['uitid_user'])) {
+      foreach ($tokens as $name => $original) {
+        switch ($name) {
+          case 'first_name':
+            $replacements[$original] = $data['uitid_user']['https://publiq.be/first_name'] ?? '';
+            break;
+
+          case 'id':
+            $replacements[$original] = $data['uitid_user']['sub'] ?? '';
+            break;
+
+          case 'email':
+            $replacements[$original] = $data['uitid_user']['email'] ?? '';
+            break;
         }
       }
     }
-    catch (\Exception $e) {
+    else {
       foreach ($tokens as $original) {
         $replacements[$original] = '';
       }
