@@ -10,7 +10,7 @@ use Drupal\Core\Render\BubbleableMetadata;
 /**
  * Implements hook_token_info().
  */
-function uitid_token_info() {
+function uitid_token_info(): array {
   $info = [];
 
   $info['types']['uitiduser'] = [
@@ -39,7 +39,7 @@ function uitid_token_info() {
 /**
  * Implements hook_tokens().
  */
-function uitid_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
+function uitid_tokens(string $type, array $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata): array {
   $replacements = [];
 
   if ($type === 'uitiduser') {

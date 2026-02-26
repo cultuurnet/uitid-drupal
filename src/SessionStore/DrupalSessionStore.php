@@ -11,12 +11,17 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
  */
 class DrupalSessionStore implements StoreInterface {
 
+  /**
+   * The session prefix.
+   *
+   * @var string
+   */
   protected string $sessionPrefix = 'auth0';
 
   /**
    * Constructs a new DrupalSessionStore.
    *
-   * @param SessionInterface $session
+   * @param \Symfony\Component\HttpFoundation\Session\SessionInterface $session
    *   The session.
    */
   public function __construct(protected SessionInterface $session) {
@@ -40,7 +45,7 @@ class DrupalSessionStore implements StoreInterface {
   /**
    * {@inheritDoc}
    */
-  public function get(string $key, $default = null) {
+  public function get(string $key, $default = NULL) {
     $keyName = $this->getSessionName($key);
     return $this->session->get($keyName, $default);
   }
@@ -74,7 +79,8 @@ class DrupalSessionStore implements StoreInterface {
   /**
    * Constructs a session key name.
    *
-   * @param string $key session key name to prefix and return
+   * @param string $key
+   *   Session key name to prefix and return.
    *
    * @return string
    *   The session key name.
@@ -83,4 +89,5 @@ class DrupalSessionStore implements StoreInterface {
     [$key] = Toolkit::filter([$key])->string()->trim();
     return $this->sessionPrefix . '_' . ($key ?? '');
   }
+
 }

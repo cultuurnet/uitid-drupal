@@ -17,12 +17,12 @@ class DrupalAuth0ClientFactory {
   /**
    * Get a new auth0 client.
    *
-   * @param ConfigFactoryInterface $configFactory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
    *   The config factory.
-   * @param StoreInterface $sessionStorage
+   * @param \Auth0\SDK\Contract\StoreInterface $sessionStorage
    *   The session storage.
    *
-   * @return Auth0
+   * @return \Auth0\SDK\Auth0
    *   The auth0 client.
    */
   public static function getClient(ConfigFactoryInterface $configFactory, StoreInterface $sessionStorage): Auth0 {

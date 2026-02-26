@@ -6,6 +6,7 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\uitid\UitIdCurrentUserInterface;
 use Drupal\views\Plugin\views\access\AccessPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -30,13 +31,6 @@ class UitIdUserStatus extends AccessPluginBase implements CacheableDependencyInt
   protected $usesOptions = TRUE;
 
   /**
-   * The UiTiD current user.
-   *
-   * @var \Drupal\uitid\UitIdCurrentUserInterface
-   */
-  protected $uitIdCurrentUser;
-
-  /**
    * Constructs a Permission object.
    *
    * @param array $configuration
@@ -48,10 +42,8 @@ class UitIdUserStatus extends AccessPluginBase implements CacheableDependencyInt
    * @param \Drupal\uitid\UitIdCurrentUserInterface $uitIdCurrentUser
    *   The UiTiD current user.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, UitIdCurrentUserInterface $uitIdCurrentUser) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, protected readonly UitIdCurrentUserInterface $uitIdCurrentUser) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-
-    $this->uitIdCurrentUser = $uitIdCurrentUser;
   }
 
   /**
@@ -69,28 +61,28 @@ class UitIdUserStatus extends AccessPluginBase implements CacheableDependencyInt
   /**
    * {@inheritdoc}
    */
-  public function access(AccountInterface $account) {
+  public function access(AccountInterface $account): bool {
     return $this->uitIdCurrentUser->isUitIdUser() === (bool) $this->options['status'];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function alterRouteDefinition(Route $route) {
+  public function alterRouteDefinition(Route $route): void {
     $route->setRequirement('_is_uitid_user', $this->options['status']);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function summaryTitle() {
+  public function summaryTitle(): TranslatableMarkup {
     return $this->options['status'] ? $this->t('User is UitID user') : $this->t('User is not an UitId user');
   }
 
   /**
    * {@inheritdoc}
    */
-  protected function defineOptions() {
+  protected function defineOptions(): array {
     $options = parent::defineOptions();
     $options['status'] = ['default' => 1];
 
@@ -100,7 +92,8 @@ class UitIdUserStatus extends AccessPluginBase implements CacheableDependencyInt
   /**
    * {@inheritdoc}
    */
-  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
+  // @phpstan-ignore-next-line
+  public function buildOptionsForm(&$form, FormStateInterface $form_state): void {
     parent::buildOptionsForm($form, $form_state);
 
     $form['status'] = [
@@ -118,21 +111,21 @@ class UitIdUserStatus extends AccessPluginBase implements CacheableDependencyInt
   /**
    * {@inheritdoc}
    */
-  public function getCacheMaxAge() {
+  public function getCacheMaxAge(): int {
     return Cache::PERMANENT;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getCacheContexts() {
+  public function getCacheContexts(): array {
     return ['user.roles:authenticated'];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getCacheTags() {
+  public function getCacheTags(): array {
     return [];
   }
 

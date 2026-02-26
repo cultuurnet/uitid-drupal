@@ -15,21 +15,21 @@ class UitIdSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormId(): string {
     return 'uitid_settings_form';
   }
 
   /**
    * {@inheritdoc}
    */
-  protected function getEditableConfigNames() {
+  protected function getEditableConfigNames(): array {
     return [self::CONFIG_NAME];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state): array {
     $config = $this->config(self::CONFIG_NAME);
 
     $form['host'] = [
@@ -72,7 +72,7 @@ class UitIdSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state): void {
     $config = $this->config(self::CONFIG_NAME);
     $config->set('host', trim($form_state->getValue('host'), '/'));
     $config->set('client_id', $form_state->getValue('client_id'));

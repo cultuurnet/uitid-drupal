@@ -12,9 +12,11 @@ use Drupal\externalauth\AuthmapInterface;
 use Drupal\externalauth\ExternalAuthInterface;
 use Drupal\uitid\Form\UitIdSettingsForm;
 use Drupal\uitid\UitIdCurrentUserInterface;
+use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Provides an authentication controller for the uitid login.
@@ -25,16 +27,13 @@ class AuthenticationController extends ControllerBase {
    * Constructs AuthenticationController.
    *
    * @param \Auth0\SDK\Auth0 $auth0Client
-   * @param Auth0 $auth0Client
    *   The auth0 client.
    * @param \Drupal\externalauth\ExternalAuthInterface $externalAuth
-   * @param ExternalAuthInterface $externalAuth
    *   The external auth service.
    * @param \Drupal\uitid\UitIdCurrentUserInterface $uitIdCurrentUser
-   * @param UitIdCurrentUserInterface $uitIdCurrentUser
    *   The UiTiD current user.
    * @param \Drupal\externalauth\AuthmapInterface $authmap
-   *   The authmap
+   *   The authmap.
    * @param \Drupal\Core\Session\SessionManagerInterface $sessionManager
    *   The session manager.
    */
@@ -76,6 +75,7 @@ class AuthenticationController extends ControllerBase {
 
     if ($request->query->has('destination')) {
       $params['state'] = base64_encode(
+        // @phpstan-ignore-next-line
         \json_encode($this->getDestinationArray()),
       );
       // Remove the destination query parameter
@@ -101,7 +101,7 @@ class AuthenticationController extends ControllerBase {
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The current request.
    */
-  public function authorize(Request $request) {
+  public function authorize(Request $request): Response {
     // Check for in error indication in the query params.
     $errorCode = $request->query->get('error', $request->request->get('error'));
 
@@ -122,7 +122,7 @@ class AuthenticationController extends ControllerBase {
         return new TrustedRedirectResponse($this->auth0Client->login(params: $params));
       }
       else {
-        $errorDescription = $request->query->get('error_description', $request->request->get('error_description', $errorCode));
+        $errorDescription = (string) $request->query->get('error_description', $request->request->get('error_description', $errorCode));
         return $this->handleFailure($errorDescription, [], $request);
       }
     }
@@ -130,16 +130,20 @@ class AuthenticationController extends ControllerBase {
     try {
       $this->auth0Client->exchange();
       $userInfo = $this->auth0Client->getUser();
+      if (!\is_array($userInfo)) {
+        throw new \Exception('Invalid user info');
+      }
+
       $account = $this->externalAuth->login($userInfo['sub'], 'uitid');
 
       // Try with uitid v1.
-      if (empty($account) && isset($userInfo['https://publiq.be/uitidv1id'])) {
+      if (!$account && isset($userInfo['https://publiq.be/uitidv1id'])) {
         $account = $this->externalAuth->login($userInfo['https://publiq.be/uitidv1id'], 'culturefeed_uitid');
 
         // Replace v1 mapping with v2 mapping.
-        if ($account) {
+        if ($account instanceof UserInterface) {
           $this->externalAuth->linkExistingAccount($userInfo['sub'], 'uitid', $account);
-          $this->authmap->delete($account->id(), 'culturefeed_uitid');
+          $this->authmap->delete((int) $account->id(), 'culturefeed_uitid');
         }
       }
 
@@ -178,17 +182,19 @@ class AuthenticationController extends ControllerBase {
    *   Log message to show.
    * @param array $context
    *   Context for the log.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The current request.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    *   The redirect.
    */
-  private function handleFailure(string $logMessage, array $context = [], Request $request = NULL) {
+  private function handleFailure(string $logMessage, array $context, Request $request) {
     $this->messenger()->addError($this->t('There was a problem logging you in, sorry for the inconvenience.'));
     $this->getLogger('uitid')->error($logMessage, $context);
 
     if ($this->currentUser()->isAuthenticated()) {
       // Clear the current session, leaving the flash bag alone.
-      $this->sessionManager->getBag('attributes')?->clear();
+      $this->sessionManager->getBag('attributes')->clear();
 
       // Trigger user_logout hooks.
       $this->moduleHandler()->invokeAll('user_logout', [$this->currentUser()]);
@@ -223,7 +229,7 @@ class AuthenticationController extends ControllerBase {
       return [];
     }
 
-    $values = base64_decode($state);
+    $values = base64_decode((string) $state);
     return \json_decode($values, TRUE);
   }
 
